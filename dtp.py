@@ -24,12 +24,55 @@ def send_dir(host, username, password, port, target, directory):
 
 	ftp = FTP(host)
 	structure = get_tree(directory)
+	paths = structure[0]
 
 	ftp.login(username, password)
-	# ftp.mkd("hello")
-	ftp.cwd(target)
-	print(ftp.pwd())
+
+	# use top directory as parent directory
+	parent = paths[0]
+	# recreate paths without the parent
+	paths = paths[1:]
+
+	for path in paths:
+		# remove parent from path (remove first occurance only because a sub directory may contain substring that matches parent)
+		path = path.replace(parent + '/', "", 1)
+		print(path)
+		create_dirs(path, target, ftp, parent)
+
 	ftp.quit()
+
+def create_dirs(path, target, ftp, parent):
+	# Adding / for better pathing
+    if(target[-1] != '/'):
+        target += '/'
+    if(target[0] == '/'):
+    	target = target[1:]
+
+    print(f"cd to {target}")
+    ftp.cwd(target)
+    print(f"inside {ftp.pwd()}")
+
+    if(parent):
+    	# make parent dir
+    	print(parent)
+    	ftp.mkd(parent)
+    	print(f"cd into parent: {parent}")
+
+    parent = False
+
+
+    if('/' in path):
+        current_dir = path[:path.index('/')]
+        next_dir = path[path.index('/') + 1:]
+        print(f"Making directory {current_dir}")
+        ftp.mkd(current_dir)
+        target += current_dir + '/'
+        ftp.cwd(current_dir)
+        create_dirs(next_dir, target, ftp, parent)
+    else: 
+        print(f"Making final directory {path}")
+        ftp.mkd(path)
+        return 0
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(
